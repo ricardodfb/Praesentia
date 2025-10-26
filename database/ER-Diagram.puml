@@ -1,0 +1,101 @@
+@startuml Database
+' !theme plain
+
+entity "users" as users {
+    * id : INT <<PK>>
+    --
+    email : VARCHAR
+    password_hash : VARCHAR
+    role : ENUM(Student,Teacher,Admin)
+    name : VARCHAR
+    consent_location : BOOLEAN
+    created_at : DATETIME
+}
+
+entity "students" as students {
+    * user_id : INT <<PK, FK>>
+    --
+    student_number : VARCHAR
+    carrera : VARCHAR
+    grupo : VARCHAR
+}
+
+entity "professors" as professors {
+    * user_id : INT <<PK, FK>>
+    --
+    employee_id : VARCHAR
+    depto : VARCHAR
+}
+
+entity "classrooms" as classrooms {
+    * id : INT <<PK>>
+    --
+    name : VARCHAR
+    building : VARCHAR
+    lat : DECIMAL(9,6)
+    lon : DECIMAL(9,6)
+    radius_meters : INT
+    created_by : INT <<FK>>
+}
+
+entity "courses" as courses {
+    * id : INT <<PK>>
+    --
+    code : VARCHAR
+    name : VARCHAR
+    profesor_id : INT <<FK>>
+}
+
+entity "course_schedule" as course_schedule {
+    * id : INT <<PK>>
+    --
+    course_id : INT <<FK>>
+    day_of_week : ENUM(Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday)
+    start_time : TIME
+    end_time : TIME
+    semester_start : DATE
+    semester_end : DATE
+}
+
+entity "sessions" as sessions {
+    * id : INT <<PK>>
+    --
+    course_id : INT <<FK>>
+    classroom_id : INT <<FK>>
+    start_datetime : DATETIME
+    end_datetime : DATETIME
+    type : VARCHAR
+}
+
+entity "attendance_records" as attendance_records {
+    * id : INT <<PK>>
+    --
+    session_id : INT <<FK>>
+    student_id : INT <<FK>>
+    timestamp : DATETIME
+    lat : DECIMAL(9,6)
+    lon : DECIMAL(9,6)
+    distance_meters : FLOAT
+    status : ENUM(present, absent, excused, pending)
+    metadata : JSON
+}
+
+entity "settings" as settings {
+    * param_key : VARCHAR <<PK>>
+    --
+    param_value : VARCHAR
+}
+
+' ==== RELACIONES ====
+
+users ||--o{ students : "1 to 1"
+users ||--o{ professors : "1 to 1"
+professors ||--o{ courses : "1 to many"
+courses ||--o{ sessions : "1 to many"
+courses ||--o{ course_schedule : "1 to many"
+classrooms ||--o{ sessions : "1 to many"
+sessions ||--o{ attendance_records : "1 to many"
+students ||--o{ attendance_records : "1 to many"
+users ||--o{ classrooms : "created_by"
+
+@enduml
