@@ -75,7 +75,7 @@ export default {
         console.log("Respuesta:", res.data);
         const { status, distance_meters, allowed_radius } = res.data;
 
-        if(status == "absent"){
+        if(status == "present"){
             this.estadoOk = true;
             this.mensaje = "Asistencia registrada correctamente ✔️";
         }else {
