@@ -9,7 +9,8 @@ const routes = [
   { path: "/", component: AlumnoClases },
   { path: "/admin/clases", component: AdminClases },
   { path: "/profesor/clases", component: ProfesorClases },
-  { path: "/location", component: LocationPage }
+  { path: "/location", component: LocationPage },
+  { path: "/check-attendance", name: "CheckAttendance", component: () => import("@/views/CheckAttendancePage.vue") }
 ];
 
 const router = createRouter({

@@ -2,7 +2,7 @@
   <div>
     <!-- Barra superior -->
     <div class="app-bar">
-      <div class="toolbar-title">Sistema de Administración de Clases</div>
+      <div class="toolbar-title">Sistema de Administración de Cursos</div>
       <div class="spacer"></div>
       <button class="icon-btn">
         <span>👤</span>
@@ -12,15 +12,15 @@
     <!-- Contenido principal -->
     <div class="card">
       <div class="toolbar">
-        <input 
-          type="text" 
-          placeholder="Buscar registro..." 
+        <input
+          type="text"
+          placeholder="Buscar registro..."
+          v-model="busqueda"
           class="search-input"
         >
         <div class="spacer"></div>
         <button class="primary-btn" @click="abrirDialogNuevo">
-          <span class="btn-icon"></span>
-          Nuevo Registro
+          Nuevo Curso
         </button>
       </div>
 
@@ -36,18 +36,14 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="clase in clases" :key="clase.id">
-            <td>{{ clase.clave }}</td>
-            <td>{{ clase.nombre }}</td>
-            <td>{{ clase.docente }}</td>
-            <td>{{ clase.horario }}</td>
+          <tr v-for="curso in cursosFiltrados" :key="curso.id">
+            <td>{{ curso.code }}</td>
+            <td>{{ curso.name }}</td>
+            <td>{{ curso.profesor_nombre }}</td>
+            <td>{{ curso.horario || "No asignado" }}</td>
             <td class="actions">
-              <button class="icon-btn-small" @click="editarClase(clase)">
-                <span></span>
-              </button>
-              <button class="icon-btn-small" @click="eliminarClase(clase)">
-                <span>🗑️</span>
-              </button>
+              <button class="icon-btn-small" @click="editarCurso(curso)">✏️</button>
+              <button class="icon-btn-small" @click="eliminarCurso(curso)">🗑️</button>
             </td>
           </tr>
         </tbody>
@@ -60,39 +56,34 @@
         <div class="dialog-header">
           <div class="dialog-title">{{ dialogTitle }}</div>
         </div>
-        
+
         <div class="dialog-content">
           <div class="form-field">
-            <label>Clave de la Clase *</label>
-            <input type="text" v-model="claseEditada.clave" class="text-input">
+            <label>Clave *</label>
+            <input type="text" v-model="cursoEditado.code" class="text-input">
           </div>
-          
+
           <div class="form-field">
             <label>Nombre de la Clase *</label>
-            <input type="text" v-model="claseEditada.nombre" class="text-input">
+            <input type="text" v-model="cursoEditado.name" class="text-input">
           </div>
-          
+
           <div class="form-field">
-            <label>Nombre del Docente *</label>
-            <input type="text" v-model="claseEditada.docente" class="text-input">
+            <label>ID del Docente *</label>
+            <input type="text" v-model="cursoEditado.profesor_id" class="text-input">
           </div>
-          
+
           <div class="form-field">
-            <label>Horario *</label>
-            <input 
-              type="text" 
-              v-model="claseEditada.horario" 
-              placeholder="Ej: Lunes y Miércoles 10:00-12:00" 
-              class="text-input"
-            >
+            <label>Horario (solo visual)</label>
+            <input type="text" v-model="cursoEditado.horario" class="text-input">
           </div>
-          
-          <small class="required-text">* Campos obligatorios</small>
         </div>
-        
+
         <div class="dialog-actions">
           <button class="secondary-btn" @click="cerrarDialog">Cancelar</button>
-          <button class="primary-btn" @click="guardarClase">Guardar</button>
+          <button class="primary-btn" @click="guardarCurso">
+            Guardar
+          </button>
         </div>
       </div>
     </div>
@@ -101,118 +92,138 @@
     <div v-if="dialogEliminarVisible" class="dialog-overlay" @click="cerrarDialogEliminar">
       <div class="dialog" @click.stop>
         <div class="dialog-header">
-          <div class="dialog-title">Confirmar Eliminación</div>
+          <div class="dialog-title">Eliminar Curso</div>
         </div>
-        
+
         <div class="dialog-content">
-          <p>¿Está seguro de que desea eliminar la clase "{{ claseAEliminar.nombre }}"?</p>
+          <p>¿Eliminar "{{ cursoAEliminar.name }}"?</p>
         </div>
-        
+
         <div class="dialog-actions">
           <button class="secondary-btn" @click="cerrarDialogEliminar">Cancelar</button>
           <button class="danger-btn" @click="confirmarEliminar">Eliminar</button>
         </div>
       </div>
     </div>
+
   </div>
 </template>
 
 <script>
+import api from "@/api";
+
 export default {
-  name: 'AdminClases',
-  
+  name: "AdminClases",
+
   data() {
     return {
       dialogVisible: false,
       dialogEliminarVisible: false,
       editando: false,
-      
-      clases: [
-        {
-          id: 1,
-          clave: 'MAT101',
-          nombre: 'Matemáticas Básicas',
-          docente: 'Dr. Juan Pérez',
-          horario: 'Lunes y Miércoles 08:00-10:00'
-        },
-        {
-          id: 2,
-          clave: 'FIS201',
-          nombre: 'Física General',
-          docente: 'Dra. María García',
-          horario: 'Martes y Jueves 14:00-16:00'
-        },
-        {
-          id: 3,
-          clave: 'PROG301',
-          nombre: 'Programación Avanzada',
-          docente: 'Ing. Carlos López',
-          horario: 'Viernes 09:00-13:00'
-        }
-      ],
-      
-      claseEditada: {
+      busqueda: "",
+
+      cursos: [],
+
+      cursoEditado: {
         id: null,
-        clave: '',
-        nombre: '',
-        docente: '',
-        horario: ''
+        code: "",
+        name: "",
+        profesor_id: "",
+        horario: ""
       },
-      
-      claseAEliminar: {}
-    }
+
+      cursoAEliminar: {}
+    };
   },
 
   computed: {
     dialogTitle() {
-      return this.editando ? 'Editar Clase' : 'Nueva Clase'
+      return this.editando ? "Editar Curso" : "Nuevo Curso";
+    },
+
+    cursosFiltrados() {
+      return this.cursos.filter(
+        c =>
+          c.code.toLowerCase().includes(this.busqueda.toLowerCase()) ||
+          c.name.toLowerCase().includes(this.busqueda.toLowerCase()) ||
+          c.profesor_nombre?.toLowerCase().includes(this.busqueda.toLowerCase())
+      );
     }
   },
 
+  mounted() {
+    this.cargarCursos();
+  },
+
   methods: {
-    abrirDialogNuevo() {
-      this.editando = false
-      this.claseEditada = {
-        id: null,
-        clave: '',
-        nombre: '',
-        docente: '',
-        horario: ''
+    async cargarCursos() {
+      try {
+        const res = await api.get("/query/courses");
+        this.cursos = res.data;
+      } catch (err) {
+        console.error("Error cargando cursos:", err);
       }
-      this.dialogVisible = true
     },
 
-    editarClase(clase) {
-      this.editando = true
-      this.claseEditada = { ...clase }
-      this.dialogVisible = true
+    abrirDialogNuevo() {
+      this.editando = false;
+      this.cursoEditado = {
+        id: null,
+        code: "",
+        name: "",
+        profesor_id: "",
+        horario: ""
+      };
+      this.dialogVisible = true;
     },
 
-    eliminarClase(clase) {
-      this.claseAEliminar = clase
-      this.dialogEliminarVisible = true
+    editarCurso(curso) {
+      this.editando = true;
+      this.cursoEditado = { ...curso };
+      this.dialogVisible = true;
     },
 
-    guardarClase() {
-      console.log('Guardando clase:', this.claseEditada)
-      this.dialogVisible = false
+    eliminarCurso(curso) {
+      this.cursoAEliminar = curso;
+      this.dialogEliminarVisible = true;
     },
 
-    confirmarEliminar() {
-      console.log('Eliminando clase:', this.claseAEliminar)
-      this.dialogEliminarVisible = false
+    async guardarCurso() {
+      try {
+        if (this.editando) {
+          await api.put(`/courses/${this.cursoEditado.id}`, this.cursoEditado);
+        } else {
+          await api.post("/courses/create", this.cursoEditado);
+        }
+
+        this.dialogVisible = false;
+        this.cargarCursos();
+      } catch (err) {
+        console.error("Error guardando curso:", err);
+      }
+    },
+
+    async confirmarEliminar() {
+      try {
+        await api.delete(`/courses/${this.cursoAEliminar.id}`);
+        this.dialogEliminarVisible = false;
+        this.cargarCursos();
+      } catch (err) {
+        console.error("Error eliminando curso:", err);
+      }
     },
 
     cerrarDialog() {
-      this.dialogVisible = false
+      this.dialogVisible = false;
     },
 
     cerrarDialogEliminar() {
-      this.dialogEliminarVisible = false
+      this.dialogEliminarVisible = false;
     }
   }
-}
+};
 </script>
+
 
 <style scoped>
 .app-bar {

@@ -4,7 +4,10 @@ const cors = require("cors");
 const app = express();
 
 // Middlewares globales
-app.use(cors());
+app.use(cors({
+  origin: "*",  // mientras pruebas
+  methods: "GET,POST,PUT,DELETE,OPTIONS",
+}));
 app.use(express.json());
 
 // Rutas
